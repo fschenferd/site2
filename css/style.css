@@ -269,6 +269,7 @@ header nav button:hover {
   display: flex;
   flex-direction: column;
   align-items: center;
+  width: 100vw;
 }
 
 #viewer-content iframe {
