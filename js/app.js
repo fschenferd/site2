@@ -19,6 +19,10 @@ document.addEventListener("DOMContentLoaded", () => {
     "in-transit": ["1164968539"],
   };
 
+  // Project texts 
+
+
+  
   /* ---------------- Elements ---------------- */
 
   const body = document.body;
@@ -68,6 +72,7 @@ document.addEventListener("DOMContentLoaded", () => {
     body.classList.add("locked");
     if (viewer) viewer.hidden = false;
 
+    renderProjectIntro();
     renderMedia();
   }
 
@@ -111,6 +116,39 @@ document.addEventListener("DOMContentLoaded", () => {
       openViewer(project, type);
     });
   });
+
+  /* ---------------- Project Intro ---------------- */
+
+  function renderProjectIntro() {
+  if (!viewerContent || !activeProject) return;
+
+  const existingIntro = viewerContent.querySelector(".project-intro");
+  if (existingIntro) existingIntro.remove();
+
+  const data = projectTexts[activeProject];
+  if (!data) return;
+
+  const intro = document.createElement("div");
+  intro.className = "project-intro";
+
+  const ptOpen = localStorage.getItem(`pt_${activeProject}`) === "1";
+
+  intro.innerHTML = `
+    <div class="en-text">${data.en}</div>
+    <button type="button">Português</button>
+    <div class="pt-text" ${ptOpen ? "" : "hidden"}>${data.pt}</div>
+  `;
+
+  const button = intro.querySelector("button");
+  const ptBlock = intro.querySelector(".pt-text");
+
+  button.addEventListener("click", () => {
+    ptBlock.hidden = false;
+    localStorage.setItem(`pt_${activeProject}`, "1");
+  });
+
+  viewerContent.insertBefore(intro, viewerContent.firstChild);
+}
 
   /* ---------------- Viewer: render media ---------------- */
 
