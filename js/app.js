@@ -6,12 +6,17 @@ document.addEventListener("DOMContentLoaded", () => {
   let activeType = "image"; // image | video
   let currentIndex = 1;
 
-  // Counts for image projects; for video, treat as number of clips
+  // Counts for image projects; for video projects, this is number of clips
   const projects = {
     "on-seeing": 12,
     "in-passing": 12,
     "meanwhile": 12,
-    "in-transit": 1, // number of videos in this gallery
+    "in-transit": 1,
+  };
+
+  // Vimeo IDs per video project (index 0 = 01, index 1 = 02, etc.)
+  const vimeoIds = {
+    "in-transit": ["1164968539"],
   };
 
   /* ---------------- Elements ---------------- */
@@ -27,8 +32,17 @@ document.addEventListener("DOMContentLoaded", () => {
   const viewerImg = document.getElementById("viewer-img");
   const counter = document.getElementById("counter");
 
-  // We'll create/remove a <video> element dynamically
-  let viewerVideo = null;
+  /* ---------------- Helpers ---------------- */
+
+  function pad2(n) {
+    return String(n).padStart(2, "0");
+  }
+
+  function removeVimeoIframe() {
+    if (!viewerContent) return;
+    const iframe = viewerContent.querySelector("iframe");
+    if (iframe) iframe.remove();
+  }
 
   /* ---------------- State transitions ---------------- */
 
@@ -59,7 +73,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function closeViewer() {
     state = "work";
-    stopAndRemoveVideo();
+
+    // Remove Vimeo if present
+    removeVimeoIframe();
+
+    // Restore image node for next open
+    if (viewerImg) viewerImg.hidden = false;
+
     if (viewer) viewer.hidden = true;
     body.classList.remove("locked");
   }
@@ -92,47 +112,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ---------------- Viewer: media rendering ---------------- */
-
-  function pad2(n) {
-    return String(n).padStart(2, "0");
-  }
-
-  function stopAndRemoveVideo() {
-    if (!viewerVideo) return;
-    try {
-      viewerVideo.pause();
-      viewerVideo.removeAttribute("src");
-      viewerVideo.load();
-    } catch (_) {}
-    viewerVideo.remove();
-    viewerVideo = null;
-  }
-
-  function ensureVideoElement() {
-    if (viewerVideo) return viewerVideo;
-
-    // Hide image element when video is active
-    if (viewerImg) viewerImg.hidden = true;
-
-    const v = document.createElement("video");
-    v.id = "viewer-video";
-    v.playsInline = true; // iOS: keep inline
-    v.preload = "metadata";
-    v.controls = true; // keep minimal but clear; can remove later
-    v.style.maxWidth = "min(92vw, 1200px)";
-    v.style.maxHeight = "82vh";
-    v.style.borderRadius = "14px";
-    v.style.boxShadow = "0 18px 70px rgba(0,0,0,0.7)";
-
-    // Insert video where the image is, at the top of viewer-content
-    if (viewerContent) {
-      viewerContent.insertBefore(v, counter || null);
-    }
-
-    viewerVideo = v;
-    return v;
-  }
+  /* ---------------- Viewer: render media ---------------- */
 
   function renderMedia() {
     if (!counter || !activeProject) return;
@@ -140,34 +120,41 @@ document.addEventListener("DOMContentLoaded", () => {
     const total = projects[activeProject] ?? 0;
     counter.textContent = `${currentIndex} / ${total || "?"}`;
 
+    // VIDEO (Vimeo)
     if (activeType === "video") {
-      const v = ensureVideoElement();
+      if (!viewerContent) return;
 
-      // Prefer MP4; optionally add WebM as a second source
-      const file = `${pad2(currentIndex)}`;
-      const mp4 = `videos/${activeProject}/${file}.mp4`;
-      const webm = `videos/${activeProject}/${file}.webm`;
+      // Hide the image element while video is shown
+      if (viewerImg) viewerImg.hidden = true;
 
-      // Reset sources cleanly
-      v.innerHTML = "";
-      const s1 = document.createElement("source");
-      s1.src = mp4;
-      s1.type = "video/mp4";
-      v.appendChild(s1);
+      // Replace any existing iframe
+      removeVimeoIframe();
 
-      // Optional: include WebM if you add it
-      const s2 = document.createElement("source");
-      s2.src = webm;
-      s2.type = "video/webm";
-      v.appendChild(s2);
+      const videoId = vimeoIds[activeProject]?.[currentIndex - 1];
+      if (!videoId) return;
 
-      v.load();
-      // Do not autoplay with sound; leave to user. (muted autoplay can be added later.)
+      const iframe = document.createElement("iframe");
+      iframe.src = `https://player.vimeo.com/video/${videoId}?dnt=1&title=0&byline=0&portrait=0`;
+      iframe.setAttribute("frameborder", "0");
+      iframe.setAttribute("allow", "autoplay; fullscreen; picture-in-picture");
+      iframe.setAttribute("allowfullscreen", "");
+      iframe.setAttribute("title", activeProject);
+
+      // Let CSS handle this if you add a rule; these are safe defaults
+      iframe.style.maxWidth = "min(92vw, 1200px)";
+      iframe.style.maxHeight = "82vh";
+      iframe.style.width = "100%";
+      iframe.style.height = "82vh";
+      iframe.style.borderRadius = "14px";
+      iframe.style.boxShadow = "0 18px 70px rgba(0,0,0,0.7)";
+
+      // Insert before the counter
+      viewerContent.insertBefore(iframe, counter || null);
       return;
     }
 
-    // Image project
-    stopAndRemoveVideo();
+    // IMAGE
+    removeVimeoIframe();
     if (!viewerImg) return;
 
     viewerImg.hidden = false;
@@ -252,6 +239,7 @@ document.addEventListener("DOMContentLoaded", () => {
         lastX = t.clientX;
         lastY = t.clientY;
 
+        // Critical for iOS: stop browser gesture arbitration
         e.preventDefault();
       },
       { passive: false }
@@ -262,22 +250,21 @@ document.addEventListener("DOMContentLoaded", () => {
       () => {
         if (state !== "viewer") return;
 
-        // If the user is interacting with video controls, don't steal gestures.
-        // (iOS often targets the <video> element)
-        // We keep this lightweight; controls remain usable.
         const dx = lastX - startX;
         const dy = lastY - startY;
 
-        const TAP_MAX = 14;
-        const SWIPE_MIN = 35;
+        const TAP_MAX = 14; // tolerate jitter
+        const SWIPE_MIN = 35; // intentional swipe
 
+        // Tap (or near-tap):
+        // - For images: advance
+        // - For Vimeo: do nothing (taps should operate player UI)
         if (Math.abs(dx) <= TAP_MAX && Math.abs(dy) <= TAP_MAX) {
-          // Tap advances only for image galleries.
-          // For video, tap should remain play/pause via native controls.
           if (activeType !== "video") nextItem();
           return;
         }
 
+        // Horizontal swipe only
         if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
 
         if (dx < 0) nextItem();
@@ -286,12 +273,13 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: true }
     );
 
+    // Prevent ghost clicks after touch; do not block Vimeo player controls
     viewerContent.addEventListener("click", (e) => {
       if (state !== "viewer") return;
-      // Prevent ghost clicks after touch; do not block video control clicks.
-      // If the click originated from the video element, allow it.
-      const targetTag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
-      if (targetTag === "video" || targetTag === "source") return;
+
+      const tag = e.target?.tagName?.toLowerCase?.() || "";
+      // Allow clicks inside the iframe/player UI to work normally
+      if (tag === "iframe") return;
 
       e.preventDefault();
       e.stopPropagation();
@@ -344,7 +332,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   if (ptReveal && aboutPt) {
     ptReveal.addEventListener("click", () => {
-      if (!aboutPt.hidden) return;
+      if (!aboutPt.hidden) return; // reveal only
       openPortuguese();
     });
   }
