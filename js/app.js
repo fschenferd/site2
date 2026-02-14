@@ -19,10 +19,47 @@ document.addEventListener("DOMContentLoaded", () => {
     "in-transit": ["1164968539"],
   };
 
-  // Project texts 
+  // Project texts (originals, as provided) – stored as HTML strings
+  const projectTexts = {
+    "on-seeing": {
+      en: `
+        <p>An observation of attention as it wavers and returns, as if it's breathing. These images are made without pursuit, often in moments when looking becomes detached from intention. Particles of gestures, temporary alignments, peripheral events… no arrangements or repetition is present here. The series explores what emerges when perception is allowed to remain incomplete, when the act of seeing is less about recognition and more about encounter. One could call it distraction, and maybe I do.</p>
+      `,
+      pt: `
+        <p>Uma observação da atenção enquanto ela expande e contrai, como se respirasse. Estas imagens são feitas sem busca, muitas vezes em momentos em que o olhar se desprende da intenção. Partículas de gestos, alinhamentos temporários, acontecimentos periféricos… sem arranjos ou repetição. A série explora o que surge quando deixamos a percepção ser incompleta, quando o ato de ver é menos sobre reconhecer e mais sobre encontrar algo. Poderíamos chamar isso de distração, e talvez eu chame.</p>
+      `,
+    },
 
+    "in-passing": {
+      en: `
+        <p>Photographs made while moving: walking, waiting, crossing, from the passenger seat, from any type of moving seat. The work resists fixation and instead follows what appears briefly along the way. Figures dissolve into architecture, shadows interrupt surfaces, glances go unanswered. What remains is a record of transition rather than arrival (is there such a thing, after all?), a trace of things encountered but not possessed.</p>
+      `,
+      pt: `
+        <p>Fotografias feitas enquanto me movo: caminhando, esperando, atravessando, sentada no banco do passageiro, sentada em um banco qualquer, de coisa que move ou não (todas movem). O trabalho resiste à fixação e, ao invés, segue o que surge brevemente ao longo do caminho. Figuras se dissolvem na arquitetura, sombras interrompem superfícies, olhares ficam sem resposta. O que permanece é a transição,  já que a chegada, talvez, não exista. Um vestígio do que foi encontro e nunca posse.</p>
+      `,
+    },
 
-  
+    "meanwhile": {
+      en: `
+        <p>Made across intervals of distraction and pause, this series gathers scenes that exist beside declared events. Nothing announces itself as central. Light shifts, bodies lean, structures hold. The images operate in the space between occurrences, where duration stretches and narrative loosens. It is most probably not about climax, as perspective allows you to shuffle importance. I guess it's about the quiet continuity of the ordinary.</p>
+      `,
+      pt: `
+        <p>Feita nos intervalos entre distração e pausa, esta série reúne cenas que existem um pouco à margem do que se reconhece como acontecimento. Nada se percebe como central. A luz se desloca, corpos se inclinam, estruturas sustentam. As imagens operam no espaço entre ocorrências, onde a duração se alonga e a narrativa se afrouxa. Muito provavelmente não se trata de clímax, já que a perspectiva permite embaralhar a importância das coisas. Talvez seja apenas a continuidade silenciosa do ordinário.</p>
+      `,
+    },
+
+    "in-transit": {
+      en: `
+        <p>The attempt with these moving images is that it doesn't necessarily departs or arrives. They remain in passage: sometimes through the motion of the camera, other times through a voice, a current of air, a subtle shift in the frame… What moves is not always visible; it may be breath, light, a pulse beneath the surface of things.</p>
+        <p>The work inhabits a middle state. It does not advance toward resolution, nor does it settle. It continues. In this continuity, attention drifts and gathers, and movement becomes less an event than a condition of being.</p>
+      `,
+      pt: `
+        <p>A tentativa com estas imagens em movimento é que não partam, necessariamente, e nem cheguem. Elas permanecem em passagem: às vezes pelo movimento da câmera, às vezes por uma voz, uma corrente de ar, um deslocamento sutil no enquadramento… O que se move nem sempre é visível; pode ser respiração, luz, um pulsar sob a superfície das coisas.</p>
+        <p>O trabalho habita um estado intermediário. Ele não avança em direção à resolução, e nem se acomoda. Ele continua. Nessa continuidade, a atenção deriva e se recompõe, e o movimento deixa de ser acontecimento para tornar-se condição de ser.</p>
+      `,
+    },
+  };
+
   /* ---------------- Elements ---------------- */
 
   const body = document.body;
@@ -48,48 +85,29 @@ document.addEventListener("DOMContentLoaded", () => {
     if (iframe) iframe.remove();
   }
 
-  /* ---------------- State transitions ---------------- */
+  function removeProjectIntro() {
+    if (!viewerContent) return;
+    const intro = viewerContent.querySelector(".project-intro");
+    if (intro) intro.remove();
+  }
+
+  function hardResetViewerMedia() {
+    removeVimeoIframe();
+    removeProjectIntro();
+
+    if (viewerImg) {
+      viewerImg.hidden = false;
+      viewerImg.removeAttribute("src");
+    }
+  }
+
+  /* ---------------- Splash ---------------- */
 
   function enterWork() {
     state = "work";
     if (splash) splash.hidden = true;
     body.classList.remove("locked");
   }
-
-  function enterPage(sectionId) {
-    state = "page";
-    body.classList.remove("locked");
-    const el = document.getElementById(sectionId);
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-  }
-
-  function openViewer(project, type) {
-    state = "viewer";
-    activeProject = project;
-    activeType = type || "image";
-    currentIndex = 1;
-
-    body.classList.add("locked");
-    if (viewer) viewer.hidden = false;
-
-    renderProjectIntro();
-    renderMedia();
-  }
-
-  function closeViewer() {
-    state = "work";
-
-    // Remove Vimeo if present
-    removeVimeoIframe();
-
-    // Restore image node for next open
-    if (viewerImg) viewerImg.hidden = false;
-
-    if (viewer) viewer.hidden = true;
-    body.classList.remove("locked");
-  }
-
-  /* ---------------- Splash ---------------- */
 
   if (enterBtn) {
     enterBtn.addEventListener("click", enterWork);
@@ -101,9 +119,59 @@ document.addEventListener("DOMContentLoaded", () => {
     btn.addEventListener("click", () => {
       const target = btn.dataset.nav;
       if (target === "work") enterWork();
-      else enterPage(target);
+      else {
+        state = "page";
+        body.classList.remove("locked");
+        const el = document.getElementById(target);
+        if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
     });
   });
+
+  /* ---------------- Project Intro ---------------- */
+
+  function renderProjectIntro() {
+    if (!viewerContent || !activeProject) return;
+
+    removeProjectIntro();
+
+    const data = projectTexts[activeProject];
+    if (!data) return;
+
+    const intro = document.createElement("div");
+    intro.className = "project-intro";
+
+    const STORAGE_KEY = `pt_project_${activeProject}`;
+    const ptOpen = (() => {
+      try {
+        return localStorage.getItem(STORAGE_KEY) === "1";
+      } catch (_) {
+        return false;
+      }
+    })();
+
+    intro.innerHTML = `
+      <div class="en-text">${data.en}</div>
+      <button type="button" class="pt-reveal" aria-expanded="${ptOpen ? "true" : "false"}">Português</button>
+      <div class="pt-text" ${ptOpen ? "" : "hidden"}>${data.pt}</div>
+    `;
+
+    const btn = intro.querySelector(".pt-reveal");
+    const ptBlock = intro.querySelector(".pt-text");
+
+    if (btn && ptBlock) {
+      btn.addEventListener("click", () => {
+        ptBlock.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+        try {
+          localStorage.setItem(STORAGE_KEY, "1");
+        } catch (_) {}
+      });
+    }
+
+    // Place intro at the very top of viewer content (above media)
+    viewerContent.insertBefore(intro, viewerContent.firstChild);
+  }
 
   /* ---------------- Work cards ---------------- */
 
@@ -117,38 +185,36 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ---------------- Project Intro ---------------- */
+  /* ---------------- Viewer: open/close ---------------- */
 
-  function renderProjectIntro() {
-  if (!viewerContent || !activeProject) return;
+  function openViewer(project, type) {
+    state = "viewer";
+    activeProject = project;
+    activeType = type || "image";
+    currentIndex = 1;
 
-  const existingIntro = viewerContent.querySelector(".project-intro");
-  if (existingIntro) existingIntro.remove();
+    body.classList.add("locked");
+    if (viewer) viewer.hidden = false;
 
-  const data = projectTexts[activeProject];
-  if (!data) return;
+    // Always start clean (prevents “last image sticks”)
+    hardResetViewerMedia();
 
-  const intro = document.createElement("div");
-  intro.className = "project-intro";
+    // Intro should never block media
+    try {
+      renderProjectIntro();
+    } catch (err) {
+      console.error("Project intro error:", err);
+    }
 
-  const ptOpen = localStorage.getItem(`pt_${activeProject}`) === "1";
+    renderMedia();
+  }
 
-  intro.innerHTML = `
-    <div class="en-text">${data.en}</div>
-    <button type="button">Português</button>
-    <div class="pt-text" ${ptOpen ? "" : "hidden"}>${data.pt}</div>
-  `;
-
-  const button = intro.querySelector("button");
-  const ptBlock = intro.querySelector(".pt-text");
-
-  button.addEventListener("click", () => {
-    ptBlock.hidden = false;
-    localStorage.setItem(`pt_${activeProject}`, "1");
-  });
-
-  viewerContent.insertBefore(intro, viewerContent.firstChild);
-}
+  function closeViewer() {
+    state = "work";
+    hardResetViewerMedia();
+    if (viewer) viewer.hidden = true;
+    body.classList.remove("locked");
+  }
 
   /* ---------------- Viewer: render media ---------------- */
 
@@ -162,10 +228,8 @@ document.addEventListener("DOMContentLoaded", () => {
     if (activeType === "video") {
       if (!viewerContent) return;
 
-      // Hide the image element while video is shown
       if (viewerImg) viewerImg.hidden = true;
 
-      // Replace any existing iframe
       removeVimeoIframe();
 
       const videoId = vimeoIds[activeProject]?.[currentIndex - 1];
@@ -178,8 +242,7 @@ document.addEventListener("DOMContentLoaded", () => {
       iframe.setAttribute("allowfullscreen", "");
       iframe.setAttribute("title", activeProject);
 
-  
-      // Insert before the counter
+      // Insert before counter
       viewerContent.insertBefore(iframe, counter || null);
       return;
     }
@@ -239,7 +302,7 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  /* ---------------- Viewer: mobile tap + swipe (iOS/Android) ---------------- */
+  /* ---------------- Viewer: mobile swipe (iOS/Android) ---------------- */
 
   if (viewerContent) {
     let startX = 0;
@@ -270,7 +333,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lastX = t.clientX;
         lastY = t.clientY;
 
-        // Critical for iOS: stop browser gesture arbitration
         e.preventDefault();
       },
       { passive: false }
@@ -284,12 +346,10 @@ document.addEventListener("DOMContentLoaded", () => {
         const dx = lastX - startX;
         const dy = lastY - startY;
 
-        const TAP_MAX = 14; // tolerate jitter
-        const SWIPE_MIN = 35; // intentional swipe
+        const TAP_MAX = 14;
+        const SWIPE_MIN = 35;
 
-        // Tap (or near-tap):
-        // - For images: advance
-        // - For Vimeo: do nothing (taps should operate player UI)
+        // Tap: advance images only (do not steal taps from Vimeo)
         if (Math.abs(dx) <= TAP_MAX && Math.abs(dy) <= TAP_MAX) {
           if (activeType !== "video") nextItem();
           return;
@@ -304,12 +364,11 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: true }
     );
 
-    // Prevent ghost clicks after touch; do not block Vimeo player controls
+    // Prevent ghost clicks after touch. Do not block iframe/player.
     viewerContent.addEventListener("click", (e) => {
       if (state !== "viewer") return;
 
       const tag = e.target?.tagName?.toLowerCase?.() || "";
-      // Allow clicks inside the iframe/player UI to work normally
       if (tag === "iframe") return;
 
       e.preventDefault();
@@ -348,7 +407,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const aboutPt = document.getElementById("about-pt");
   const PT_KEY = "about_pt_open";
 
-  function openPortuguese() {
+  function openPortugueseAbout() {
     if (!aboutPt || !ptReveal) return;
     aboutPt.hidden = false;
     ptReveal.setAttribute("aria-expanded", "true");
@@ -358,13 +417,13 @@ document.addEventListener("DOMContentLoaded", () => {
   }
 
   try {
-    if (localStorage.getItem(PT_KEY) === "1") openPortuguese();
+    if (localStorage.getItem(PT_KEY) === "1") openPortugueseAbout();
   } catch (_) {}
 
   if (ptReveal && aboutPt) {
     ptReveal.addEventListener("click", () => {
-      if (!aboutPt.hidden) return; // reveal only
-      openPortuguese();
+      if (!aboutPt.hidden) return;
+      openPortugueseAbout();
     });
   }
 });
