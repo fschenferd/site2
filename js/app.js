@@ -501,18 +501,22 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: true }
     );
 
-    // Prevent ghost clicks after touch. Do not block iframe/player.
-    viewerContent.addEventListener("click", (e) => {
-      if (state !== "viewer") return;
-      if (viewerIntroActive) return;
+  // Click outside media closes viewer (works for Vimeo + images)
+viewerContent.addEventListener("click", (e) => {
+  if (state !== "viewer") return;
+  if (viewerIntroActive) return;
 
-      const tag = e.target?.tagName?.toLowerCase?.() || "";
-      if (tag === "iframe") return;
+  // If click is on the media itself, do nothing
+  const tag = e.target?.tagName?.toLowerCase?.() || "";
+  const clickedIframe = tag === "iframe" || !!e.target.closest?.("iframe");
+  const clickedImage = viewerImg && (e.target === viewerImg);
 
-      e.preventDefault();
-      e.stopPropagation();
-    });
-  }
+  if (clickedIframe || clickedImage) return;
+
+  // Otherwise treat as "outside" click and close
+  closeViewer();
+});
+
 
   /* ---------------- Parallax (desktop only) ---------------- */
 
