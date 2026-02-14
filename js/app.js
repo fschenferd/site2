@@ -140,14 +140,7 @@ document.addEventListener("DOMContentLoaded", () => {
       iframe.setAttribute("allowfullscreen", "");
       iframe.setAttribute("title", activeProject);
 
-      // Let CSS handle this if you add a rule; these are safe defaults
-      iframe.style.maxWidth = "min(92vw, 1200px)";
-      iframe.style.maxHeight = "82vh";
-      iframe.style.width = "100%";
-      iframe.style.height = "82vh";
-      iframe.style.borderRadius = "14px";
-      iframe.style.boxShadow = "0 18px 70px rgba(0,0,0,0.7)";
-
+  
       // Insert before the counter
       viewerContent.insertBefore(iframe, counter || null);
       return;
