@@ -278,6 +278,15 @@ header nav button:hover {
   box-shadow: 0 18px 70px rgba(0,0,0,0.7);
 }
 
+#viewer-content iframe {
+  max-width: min(92vw, 1200px);
+  max-height: 82vh;
+  width: 100%;
+  height: 82vh;
+  border-radius: 14px;
+  box-shadow: 0 18px 70px rgba(0,0,0,0.7);
+}
+
 #counter {
   margin-top: 12px;
   font-family: "IBM Plex Mono", monospace;
