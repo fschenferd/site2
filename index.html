@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Fernanda Schenferd</title>
+  <meta name="description" content="Photography and film work by Fernanda Schenferd." />
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500&family=Cormorant+Garamond:wght@400;500&family=IBM+Plex+Mono:wght@300&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css?v=2">
+
+</head>
+
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="splash-card">
+    <h1>FERNANDA SCHENFERD</h1>
+    <p id="tagline">IMAGES FROM THE EDGE OF THE REAL</p>
+    <button id="enter">ENTER</button>
+  </div>
+</div>
+
+<!-- HEADER -->
+<header id="header">
+  <nav>
+    <button data-nav="work">WORK</button>
+    <button data-nav="about">ABOUT</button>
+    <button data-nav="contact">CONTACT</button>
+  </nav>
+</header>
+
+<!-- WORK (horizontal plane) -->
+<main id="work" class="work-strip" aria-label="Work">
+  <section class="project">
+    <a class="card" data-project="on-seeing">
+      <div class="card-media">
+        <img src="images/on-seeing/01.jpg" alt="On Seeing">
+      </div>
+      <div class="card-meta">
+        <div class="card-title">ON SEEING</div>
+      </div>
+    </a>
+  </section>
+
+  <section class="project">
+    <a class="card" data-project="in-passing">
+      <div class="card-media">
+        <img src="images/in-passing/01.jpg" alt="In Passing">
+      </div>
+      <div class="card-meta">
+        <div class="card-title">IN PASSING</div>
+      </div>
+    </a>
+  </section>
+
+  <section class="project">
+    <a class="card" data-project="meanwhile">
+      <div class="card-media">
+        <img src="images/meanwhile/01.jpg" alt="Meanwhile">
+      </div>
+      <div class="card-meta">
+        <div class="card-title">MEANWHILE</div>
+      </div>
+    </a>
+  </section>
+</main>
+
+<!-- VIEWER -->
+<div id="viewer" hidden>
+  <div id="viewer-backdrop"></div>
+  <div id="viewer-content">
+    <img id="viewer-img" alt="">
+    <div id="counter"></div>
+  </div>
+</div>
+
+<!-- ABOUT -->
+<section id="about">
+
+  <div class="about-lang" lang="en">
+    <p>
+      I work from a place of attention rather than intention. Images emerge when I remain open to what unfolds in the margins of me — events not sought, moments not staged, relations that appear briefly and dissolve.
+    </p>
+
+    <p>
+      My practice is rooted in observation as a reciprocal act: the observer alters what is observed, just as light alters the matter it touches. Photography, for me, operates in this unstable space between particle and wave, presence and trace, distance and involvement, where things entangle rather than resolve.
+    </p>
+
+    <p>
+      I am drawn equally to the natural and the constructed, to surfaces marked by time, chance, and use. Walking, waiting, and distraction are not obstacles but methods, ways of allowing the world to pass through me and enter the frame on its own terms.
+    </p>
+
+    <button id="pt-reveal" type="button" aria-controls="about-pt" aria-expanded="false">
+      Português
+    </button>
+  </div>
+
+  <div id="about-pt" class="about-lang about-secondary" lang="pt-BR" hidden>
+    <p>
+      Trabalho a partir da atenção, não da intenção. As imagens vêm quando fico aberta ao que aparece nas margens de mim. Eventos que não busco, momentos que não organizo, relações que surgem por um instante e somem.
+    </p>
+
+    <p>
+      Minha prática nasce da observação como um gesto recíproco: quem olha muda o que olha, assim como a luz muda a matéria que toca. Para mim, a fotografia habita esse espaço instável entre partícula e onda, presença e vestígio, distância e envolvimento. Lá onde as coisas se entrelaçam, em vez de se resolverem.
+    </p>
+
+    <p>
+      Sou atraída com igual força pelo natural e pelo construído, por superfícies marcadas pelo tempo, pelo acaso, pelo uso. Caminhar, esperar, me distrair não são obstáculos, mas jeitos de deixar o mundo passar por mim e entrar no quadro nos seus próprios termos.
+    </p>
+  </div>
+
+</section>
+
+
+<!-- CONTACT -->
+<section id="contact">
+  <a href="mailto:hello@fernandaschenferd.com.br">
+    hello@fernandaschenferd.com.br
+  </a>
+</section>
+
+<script src="js/app.js?v=2"></script>
+</body>
+</html>
