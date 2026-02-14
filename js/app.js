@@ -19,7 +19,7 @@ document.addEventListener("DOMContentLoaded", () => {
     "in-transit": ["1164968539"],
   };
 
-  // Project texts (originals, as provided) – stored as HTML strings
+  // Project texts (stored as HTML strings)
   const projectTexts = {
     "on-seeing": {
       en: `
@@ -35,7 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
         <p>Photographs made while moving: walking, waiting, crossing, from the passenger seat, from any type of moving seat. The work resists fixation and instead follows what appears briefly along the way. Figures dissolve into architecture, shadows interrupt surfaces, glances go unanswered. What remains is a record of transition rather than arrival (is there such a thing, after all?), a trace of things encountered but not possessed.</p>
       `,
       pt: `
-        <p>Fotografias feitas enquanto me movo: caminhando, esperando, atravessando, sentada no banco do passageiro, sentada em um banco qualquer, de coisa que move ou não (todas movem). O trabalho resiste à fixação e, ao invés, segue o que surge brevemente ao longo do caminho. Figuras se dissolvem na arquitetura, sombras interrompem superfícies, olhares ficam sem resposta. O que permanece é a transição,  já que a chegada, talvez, não exista. Um vestígio do que foi encontro e nunca posse.</p>
+        <p>Fotografias feitas enquanto me movo: caminhando, esperando, atravessando, sentada no banco do passageiro, sentada em um banco qualquer, de coisa que move ou não (todas movem). O trabalho resiste à fixação e, ao invés, segue o que surge brevemente ao longo do caminho. Figuras se dissolvem na arquitetura, sombras interrompem superfícies, olhares ficam sem resposta. O que permanece é a transição, já que a chegada, talvez, não exista. Um vestígio do que foi encontro e nunca posse.</p>
       `,
     },
 
@@ -85,12 +85,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (iframe) iframe.remove();
   }
 
-  function removeProjectIntro() {
-    if (!viewerContent) return;
-    const intro = viewerContent.querySelector(".project-intro");
-    if (intro) intro.remove();
-  }
-
   function hardResetViewerMedia() {
     removeVimeoIframe();
 
@@ -99,10 +93,8 @@ document.addEventListener("DOMContentLoaded", () => {
       viewerImg.removeAttribute("src");
     }
 
-    // Also hide counter until something renders
     if (counter) counter.textContent = "";
   }
-
 
   /* ---------------- Viewer Intro Overlay (session-based) ---------------- */
 
@@ -259,7 +251,6 @@ document.addEventListener("DOMContentLoaded", () => {
     renderMedia();
   }
 
-  
   /* ---------------- Splash ---------------- */
 
   function enterWork() {
@@ -287,8 +278,6 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-
-
   /* ---------------- Work cards ---------------- */
 
   document.querySelectorAll("[data-project]").forEach((card) => {
@@ -302,8 +291,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------------- Viewer: open/close ---------------- */
-  
-   function openViewer(project, type) {
+
+  function openViewer(project, type) {
     state = "viewer";
     activeProject = project;
     activeType = type || "image";
@@ -335,7 +324,6 @@ document.addEventListener("DOMContentLoaded", () => {
     if (viewer) viewer.hidden = true;
     body.classList.remove("locked");
   }
-
 
   /* ---------------- Viewer: render media ---------------- */
 
@@ -421,7 +409,11 @@ document.addEventListener("DOMContentLoaded", () => {
       }
 
       // Block navigation keys while intro is visible
-      if (["ArrowRight", "ArrowDown", "PageDown", "ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
+      if (
+        ["ArrowRight", "ArrowDown", "PageDown", "ArrowLeft", "ArrowUp", "PageUp"].includes(
+          e.key
+        )
+      ) {
         e.preventDefault();
         return;
       }
@@ -445,7 +437,6 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
   });
-
 
   /* ---------------- Viewer: mobile swipe (iOS/Android) ---------------- */
 
@@ -489,7 +480,6 @@ document.addEventListener("DOMContentLoaded", () => {
         if (state !== "viewer") return;
         if (viewerIntroActive) return;
 
-
         const dx = lastX - startX;
         const dy = lastY - startY;
 
@@ -514,6 +504,7 @@ document.addEventListener("DOMContentLoaded", () => {
     // Prevent ghost clicks after touch. Do not block iframe/player.
     viewerContent.addEventListener("click", (e) => {
       if (state !== "viewer") return;
+      if (viewerIntroActive) return;
 
       const tag = e.target?.tagName?.toLowerCase?.() || "";
       if (tag === "iframe") return;
@@ -522,17 +513,6 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
     });
   }
-
-  viewerContent.addEventListener("click", (e) => {
-  if (state !== "viewer") return;
-  if (viewerIntroActive) return;
-
-  const tag = e.target?.tagName?.toLowerCase?.() || "";
-  if (tag === "iframe") return;
-
-  e.preventDefault();
-  e.stopPropagation();
-});
 
   /* ---------------- Parallax (desktop only) ---------------- */
 
