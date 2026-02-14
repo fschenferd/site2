@@ -415,4 +415,88 @@ header nav button:hover {
   color: rgba(245,245,245,0.85);
 }
 
+/* =========================================================
+   VIEWER INTRO OVERLAY (once per session per project)
+========================================================= */
+
+#viewer-intro {
+  position: absolute;
+  inset: 0;
+  z-index: 2; /* above #viewer-content (z-index:1) */
+  display: grid;
+  place-items: center;
+  padding: 6vh 6vw;
+  background: rgba(7,7,10,0.96);
+  backdrop-filter: blur(10px);
+}
+
+#viewer-intro[hidden] {
+  display: none !important;
+}
+
+.viewer-intro-inner {
+  width: min(760px, 92vw);
+  max-height: 88vh;
+  overflow: auto;
+  padding: 26px 22px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.14);
+  box-shadow: 0 18px 70px rgba(0,0,0,0.7);
+
+  color: rgba(245,245,245,0.88);
+  font-size: 1.12rem;
+  line-height: 1.85;
+
+  /* keep your text rendering */
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+.viewer-intro-inner p {
+  margin-bottom: 1.1em;
+}
+
+.viewer-intro-inner p:last-child {
+  margin-bottom: 0;
+}
+
+.viewer-intro-pt {
+  margin-top: 14px;
+  color: rgba(245,245,245,0.74);
+}
+
+.viewer-intro-actions {
+  margin-top: 16px;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+}
+
+.viewer-intro-actions button {
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  color: rgba(245,245,245,0.65);
+}
+
+.viewer-intro-actions button:hover {
+  color: rgba(245,245,245,0.88);
+}
+
+.viewer-intro-hint {
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.70rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: rgba(245,245,245,0.45);
+}
+
 
