@@ -307,6 +307,47 @@ header nav button:hover {
   -webkit-touch-callout: none;
 }
 
+/* Adding texts to the projects/galleries */
+.project-intro {
+  width: min(92vw, 1200px);
+  margin: 0 0 18px;
+  color: rgba(245,245,245,0.85);
+  font-size: 1.05rem;
+  line-height: 1.75;
+}
+
+.project-intro p {
+  margin-bottom: 0.9em;
+}
+
+.project-intro p:last-child {
+  margin-bottom: 0;
+}
+
+.project-intro .pt-text {
+  margin-top: 14px;
+  color: rgba(245,245,245,0.7);
+}
+
+.project-intro button {
+  margin-top: 10px;
+  padding: 0;
+  border: 0;
+  background: none;
+  cursor: pointer;
+
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.72rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+
+  color: rgba(245,245,245,0.6);
+}
+
+.project-intro button:hover {
+  color: rgba(245,245,245,0.85);
+}
+
 /* =========================================================
    ABOUT / CONTACT (VERTICAL PAGE)
 ========================================================= */
