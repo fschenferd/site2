@@ -93,14 +93,173 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function hardResetViewerMedia() {
     removeVimeoIframe();
-    removeProjectIntro();
 
     if (viewerImg) {
       viewerImg.hidden = false;
       viewerImg.removeAttribute("src");
     }
+
+    // Also hide counter until something renders
+    if (counter) counter.textContent = "";
   }
 
+
+  /* ---------------- Viewer Intro Overlay (session-based) ---------------- */
+
+  const INTRO_SEEN_KEY = "seen_project_intros_v1";
+
+  function shouldResetIntroFromQuery() {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      return params.get("resetIntro") === "1";
+    } catch (_) {
+      return false;
+    }
+  }
+
+  function resetSessionIntrosIfRequested() {
+    if (!shouldResetIntroFromQuery()) return;
+    try {
+      sessionStorage.removeItem(INTRO_SEEN_KEY);
+    } catch (_) {}
+  }
+
+  resetSessionIntrosIfRequested();
+
+  function getSeenMap() {
+    try {
+      const raw = sessionStorage.getItem(INTRO_SEEN_KEY);
+      return raw ? JSON.parse(raw) : {};
+    } catch (_) {
+      return {};
+    }
+  }
+
+  function setSeen(project) {
+    try {
+      const map = getSeenMap();
+      map[project] = 1;
+      sessionStorage.setItem(INTRO_SEEN_KEY, JSON.stringify(map));
+    } catch (_) {}
+  }
+
+  function hasSeen(project) {
+    const map = getSeenMap();
+    return map && map[project] === 1;
+  }
+
+  let viewerIntroActive = false;
+  let viewerIntroEl = null;
+
+  function ensureViewerIntroEl() {
+    if (viewerIntroEl) return viewerIntroEl;
+    if (!viewer) return null;
+
+    const el = document.createElement("div");
+    el.id = "viewer-intro";
+    el.hidden = true;
+
+    // Click/tap anywhere enters (not close)
+    el.addEventListener("click", () => {
+      if (state !== "viewer") return;
+      if (!viewerIntroActive) return;
+      enterViewerFromIntro();
+    });
+
+    // Touchend for mobile reliability
+    el.addEventListener(
+      "touchend",
+      () => {
+        if (state !== "viewer") return;
+        if (!viewerIntroActive) return;
+        enterViewerFromIntro();
+      },
+      { passive: true }
+    );
+
+    viewer.appendChild(el);
+    viewerIntroEl = el;
+    return el;
+  }
+
+  function removeViewerIntro() {
+    if (!viewerIntroEl) return;
+    viewerIntroEl.hidden = true;
+    viewerIntroEl.innerHTML = "";
+    viewerIntroActive = false;
+  }
+
+  function showViewerIntro(project) {
+    const el = ensureViewerIntroEl();
+    if (!el) return false;
+
+    const data = projectTexts[project];
+    if (!data) return false;
+
+    // Keep your current per-project PT persistence
+    const STORAGE_KEY = `pt_project_${project}`;
+    const ptOpen = (() => {
+      try {
+        return localStorage.getItem(STORAGE_KEY) === "1";
+      } catch (_) {
+        return false;
+      }
+    })();
+
+    el.innerHTML = `
+      <div class="viewer-intro-inner">
+        <div class="viewer-intro-en">${data.en}</div>
+
+        <div class="viewer-intro-actions">
+          <button type="button" class="viewer-intro-pt-toggle" aria-expanded="${ptOpen ? "true" : "false"}">Português</button>
+          <div class="viewer-intro-hint">Tap anywhere to enter</div>
+        </div>
+
+        <div class="viewer-intro-pt" ${ptOpen ? "" : "hidden"}>${data.pt}</div>
+      </div>
+    `;
+
+    const btn = el.querySelector(".viewer-intro-pt-toggle");
+    const ptBlock = el.querySelector(".viewer-intro-pt");
+
+    if (btn && ptBlock) {
+      btn.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        ev.stopPropagation(); // do not enter when toggling PT
+        ptBlock.hidden = false;
+        btn.setAttribute("aria-expanded", "true");
+        try {
+          localStorage.setItem(STORAGE_KEY, "1");
+        } catch (_) {}
+      });
+    }
+
+    viewerIntroActive = true;
+    el.hidden = false;
+
+    // Hide media UI until entering
+    if (viewerImg) viewerImg.hidden = true;
+    if (counter) {
+      counter.textContent = "";
+      counter.hidden = true;
+    }
+
+    return true;
+  }
+
+  function enterViewerFromIntro() {
+    if (!activeProject) return;
+
+    setSeen(activeProject);
+    removeViewerIntro();
+
+    if (counter) counter.hidden = false;
+
+    // Now render media for the first time
+    renderMedia();
+  }
+
+  
   /* ---------------- Splash ---------------- */
 
   function enterWork() {
@@ -128,50 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 
-  /* ---------------- Project Intro ---------------- */
 
-  function renderProjectIntro() {
-    if (!viewerContent || !activeProject) return;
-
-    removeProjectIntro();
-
-    const data = projectTexts[activeProject];
-    if (!data) return;
-
-    const intro = document.createElement("div");
-    intro.className = "project-intro";
-
-    const STORAGE_KEY = `pt_project_${activeProject}`;
-    const ptOpen = (() => {
-      try {
-        return localStorage.getItem(STORAGE_KEY) === "1";
-      } catch (_) {
-        return false;
-      }
-    })();
-
-    intro.innerHTML = `
-      <div class="en-text">${data.en}</div>
-      <button type="button" class="pt-reveal" aria-expanded="${ptOpen ? "true" : "false"}">Português</button>
-      <div class="pt-text" ${ptOpen ? "" : "hidden"}>${data.pt}</div>
-    `;
-
-    const btn = intro.querySelector(".pt-reveal");
-    const ptBlock = intro.querySelector(".pt-text");
-
-    if (btn && ptBlock) {
-      btn.addEventListener("click", () => {
-        ptBlock.hidden = false;
-        btn.setAttribute("aria-expanded", "true");
-        try {
-          localStorage.setItem(STORAGE_KEY, "1");
-        } catch (_) {}
-      });
-    }
-
-    // Place intro at the very top of viewer content (above media)
-    viewerContent.insertBefore(intro, viewerContent.firstChild);
-  }
 
   /* ---------------- Work cards ---------------- */
 
@@ -186,8 +302,8 @@ document.addEventListener("DOMContentLoaded", () => {
   });
 
   /* ---------------- Viewer: open/close ---------------- */
-
-  function openViewer(project, type) {
+  
+   function openViewer(project, type) {
     state = "viewer";
     activeProject = project;
     activeType = type || "image";
@@ -198,23 +314,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     // Always start clean (prevents “last image sticks”)
     hardResetViewerMedia();
+    removeViewerIntro(); // ensure no stale intro remains
 
-    // Intro should never block media
-    try {
-      renderProjectIntro();
-    } catch (err) {
-      console.error("Project intro error:", err);
-    }
+    // Show intro once per session per project
+    const needsIntro = !hasSeen(activeProject);
+    const didShow = needsIntro ? showViewerIntro(activeProject) : false;
 
+    // If intro is shown, we wait until user enters
+    if (didShow) return;
+
+    // Otherwise, render immediately
+    if (counter) counter.hidden = false;
     renderMedia();
   }
 
   function closeViewer() {
     state = "work";
+    removeViewerIntro();
     hardResetViewerMedia();
     if (viewer) viewer.hidden = true;
     body.classList.remove("locked");
   }
+
 
   /* ---------------- Viewer: render media ---------------- */
 
@@ -286,6 +407,29 @@ document.addEventListener("DOMContentLoaded", () => {
   window.addEventListener("keydown", (e) => {
     if (state !== "viewer") return;
 
+    // If intro overlay is active
+    if (viewerIntroActive) {
+      if (e.key === "Escape") {
+        closeViewer();
+        return;
+      }
+
+      if (e.key === "Enter" || e.key === " ") {
+        e.preventDefault();
+        enterViewerFromIntro();
+        return;
+      }
+
+      // Block navigation keys while intro is visible
+      if (["ArrowRight", "ArrowDown", "PageDown", "ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
+        e.preventDefault();
+        return;
+      }
+
+      return;
+    }
+
+    // Normal viewer keys (media visible)
     if (e.key === "Escape") {
       closeViewer();
       return;
@@ -301,6 +445,7 @@ document.addEventListener("DOMContentLoaded", () => {
       return;
     }
   });
+
 
   /* ---------------- Viewer: mobile swipe (iOS/Android) ---------------- */
 
@@ -342,6 +487,8 @@ document.addEventListener("DOMContentLoaded", () => {
       "touchend",
       () => {
         if (state !== "viewer") return;
+        if (viewerIntroActive) return;
+
 
         const dx = lastX - startX;
         const dy = lastY - startY;
@@ -375,6 +522,17 @@ document.addEventListener("DOMContentLoaded", () => {
       e.stopPropagation();
     });
   }
+
+  viewerContent.addEventListener("click", (e) => {
+  if (state !== "viewer") return;
+  if (viewerIntroActive) return;
+
+  const tag = e.target?.tagName?.toLowerCase?.() || "";
+  if (tag === "iframe") return;
+
+  e.preventDefault();
+  e.stopPropagation();
+});
 
   /* ---------------- Parallax (desktop only) ---------------- */
 
