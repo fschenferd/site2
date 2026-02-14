@@ -235,6 +235,15 @@ header nav button:hover {
   text-transform: uppercase;
 }
 
+.card-kicker{
+  font-family: "IBM Plex Mono", monospace;
+  font-size: 0.70rem;
+  letter-spacing: 0.22em;
+  color: rgba(245,245,245,0.62);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+}
+
 /* =========================================================
    VIEWER (MODAL)
 ========================================================= */
