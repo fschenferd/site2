@@ -3,13 +3,15 @@ document.addEventListener("DOMContentLoaded", () => {
 
   let state = "splash"; // splash | work | page | viewer
   let activeProject = null;
+  let activeType = "image"; // image | video
   let currentIndex = 1;
 
-  // Adjust counts to match your folders
+  // Counts for image projects; for video, treat as number of clips
   const projects = {
     "on-seeing": 12,
     "in-passing": 12,
     "meanwhile": 12,
+    "in-transit": 1, // number of videos in this gallery
   };
 
   /* ---------------- Elements ---------------- */
@@ -19,13 +21,14 @@ document.addEventListener("DOMContentLoaded", () => {
   const splash = document.getElementById("splash");
   const enterBtn = document.getElementById("enter");
 
-  const workStrip = document.getElementById("work");
-
   const viewer = document.getElementById("viewer");
-  const viewerImg = document.getElementById("viewer-img");
   const viewerBackdrop = document.getElementById("viewer-backdrop");
   const viewerContent = document.getElementById("viewer-content");
+  const viewerImg = document.getElementById("viewer-img");
   const counter = document.getElementById("counter");
+
+  // We'll create/remove a <video> element dynamically
+  let viewerVideo = null;
 
   /* ---------------- State transitions ---------------- */
 
@@ -42,19 +45,21 @@ document.addEventListener("DOMContentLoaded", () => {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
   }
 
-  function openViewer(project) {
+  function openViewer(project, type) {
     state = "viewer";
     activeProject = project;
+    activeType = type || "image";
     currentIndex = 1;
 
     body.classList.add("locked");
     if (viewer) viewer.hidden = false;
 
-    renderImage();
+    renderMedia();
   }
 
   function closeViewer() {
     state = "work";
+    stopAndRemoveVideo();
     if (viewer) viewer.hidden = true;
     body.classList.remove("locked");
   }
@@ -64,11 +69,6 @@ document.addEventListener("DOMContentLoaded", () => {
   if (enterBtn) {
     enterBtn.addEventListener("click", enterWork);
   }
-
-  // Optional: allow any key to enter (if you want)
-  // window.addEventListener("keydown", () => {
-  //   if (state === "splash") enterWork();
-  // }, { once: true });
 
   /* ---------------- Navigation ---------------- */
 
@@ -86,41 +86,121 @@ document.addEventListener("DOMContentLoaded", () => {
     card.addEventListener("click", (e) => {
       e.preventDefault();
       const project = card.dataset.project;
+      const type = card.dataset.type || "image";
       if (!project) return;
-      openViewer(project);
+      openViewer(project, type);
     });
   });
 
-  /* ---------------- Viewer ---------------- */
+  /* ---------------- Viewer: media rendering ---------------- */
 
-  function renderImage() {
-    if (!viewerImg || !counter || !activeProject) return;
-
-    const file = `${String(currentIndex).padStart(2, "0")}.jpg`;
-    viewerImg.src = `images/${activeProject}/${file}`;
-    counter.textContent = `${currentIndex} / ${projects[activeProject] ?? "?"}`;
+  function pad2(n) {
+    return String(n).padStart(2, "0");
   }
 
-  function nextImage() {
+  function stopAndRemoveVideo() {
+    if (!viewerVideo) return;
+    try {
+      viewerVideo.pause();
+      viewerVideo.removeAttribute("src");
+      viewerVideo.load();
+    } catch (_) {}
+    viewerVideo.remove();
+    viewerVideo = null;
+  }
+
+  function ensureVideoElement() {
+    if (viewerVideo) return viewerVideo;
+
+    // Hide image element when video is active
+    if (viewerImg) viewerImg.hidden = true;
+
+    const v = document.createElement("video");
+    v.id = "viewer-video";
+    v.playsInline = true; // iOS: keep inline
+    v.preload = "metadata";
+    v.controls = true; // keep minimal but clear; can remove later
+    v.style.maxWidth = "min(92vw, 1200px)";
+    v.style.maxHeight = "82vh";
+    v.style.borderRadius = "14px";
+    v.style.boxShadow = "0 18px 70px rgba(0,0,0,0.7)";
+
+    // Insert video where the image is, at the top of viewer-content
+    if (viewerContent) {
+      viewerContent.insertBefore(v, counter || null);
+    }
+
+    viewerVideo = v;
+    return v;
+  }
+
+  function renderMedia() {
+    if (!counter || !activeProject) return;
+
     const total = projects[activeProject] ?? 0;
+    counter.textContent = `${currentIndex} / ${total || "?"}`;
+
+    if (activeType === "video") {
+      const v = ensureVideoElement();
+
+      // Prefer MP4; optionally add WebM as a second source
+      const file = `${pad2(currentIndex)}`;
+      const mp4 = `videos/${activeProject}/${file}.mp4`;
+      const webm = `videos/${activeProject}/${file}.webm`;
+
+      // Reset sources cleanly
+      v.innerHTML = "";
+      const s1 = document.createElement("source");
+      s1.src = mp4;
+      s1.type = "video/mp4";
+      v.appendChild(s1);
+
+      // Optional: include WebM if you add it
+      const s2 = document.createElement("source");
+      s2.src = webm;
+      s2.type = "video/webm";
+      v.appendChild(s2);
+
+      v.load();
+      // Do not autoplay with sound; leave to user. (muted autoplay can be added later.)
+      return;
+    }
+
+    // Image project
+    stopAndRemoveVideo();
+    if (!viewerImg) return;
+
+    viewerImg.hidden = false;
+    const file = `${pad2(currentIndex)}.jpg`;
+    viewerImg.src = `images/${activeProject}/${file}`;
+  }
+
+  function nextItem() {
+    const total = projects[activeProject] ?? 0;
+    if (!total) return;
+
     if (currentIndex < total) {
       currentIndex += 1;
-      renderImage();
+      renderMedia();
     } else {
       closeViewer();
     }
   }
 
-  function prevImage() {
+  function prevItem() {
     if (currentIndex > 1) {
       currentIndex -= 1;
-      renderImage();
+      renderMedia();
     }
   }
+
+  /* ---------------- Viewer: close on backdrop ---------------- */
 
   if (viewerBackdrop) {
     viewerBackdrop.addEventListener("click", closeViewer);
   }
+
+  /* ---------------- Viewer: keyboard ---------------- */
 
   window.addEventListener("keydown", (e) => {
     if (state !== "viewer") return;
@@ -131,12 +211,12 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     if (["ArrowRight", "ArrowDown", "PageDown"].includes(e.key)) {
-      nextImage();
+      nextItem();
       return;
     }
 
     if (["ArrowLeft", "ArrowUp", "PageUp"].includes(e.key)) {
-      prevImage();
+      prevItem();
       return;
     }
   });
@@ -172,7 +252,6 @@ document.addEventListener("DOMContentLoaded", () => {
         lastX = t.clientX;
         lastY = t.clientY;
 
-        // Critical for iOS: stop browser gesture arbitration
         e.preventDefault();
       },
       { passive: false }
@@ -183,30 +262,37 @@ document.addEventListener("DOMContentLoaded", () => {
       () => {
         if (state !== "viewer") return;
 
+        // If the user is interacting with video controls, don't steal gestures.
+        // (iOS often targets the <video> element)
+        // We keep this lightweight; controls remain usable.
         const dx = lastX - startX;
         const dy = lastY - startY;
 
-        const TAP_MAX = 14; // tolerate jitter
-        const SWIPE_MIN = 35; // intentional swipe
+        const TAP_MAX = 14;
+        const SWIPE_MIN = 35;
 
-        // Tap (or near-tap) => next
         if (Math.abs(dx) <= TAP_MAX && Math.abs(dy) <= TAP_MAX) {
-          nextImage();
+          // Tap advances only for image galleries.
+          // For video, tap should remain play/pause via native controls.
+          if (activeType !== "video") nextItem();
           return;
         }
 
-        // Horizontal swipe only
         if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
 
-        if (dx < 0) nextImage(); // swipe left
-        else prevImage(); // swipe right
+        if (dx < 0) nextItem();
+        else prevItem();
       },
       { passive: true }
     );
 
-    // Prevent ghost click after touch
     viewerContent.addEventListener("click", (e) => {
       if (state !== "viewer") return;
+      // Prevent ghost clicks after touch; do not block video control clicks.
+      // If the click originated from the video element, allow it.
+      const targetTag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : "";
+      if (targetTag === "video" || targetTag === "source") return;
+
       e.preventDefault();
       e.stopPropagation();
     });
@@ -249,21 +335,16 @@ document.addEventListener("DOMContentLoaded", () => {
     ptReveal.setAttribute("aria-expanded", "true");
     try {
       localStorage.setItem(PT_KEY, "1");
-    } catch (_) {
-      // ignore
-    }
+    } catch (_) {}
   }
 
-  // Restore persisted state
   try {
     if (localStorage.getItem(PT_KEY) === "1") openPortuguese();
-  } catch (_) {
-    // ignore
-  }
+  } catch (_) {}
 
   if (ptReveal && aboutPt) {
     ptReveal.addEventListener("click", () => {
-      if (!aboutPt.hidden) return; // reveal only, no toggle
+      if (!aboutPt.hidden) return;
       openPortuguese();
     });
   }
