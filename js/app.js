@@ -474,7 +474,7 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: false }
     );
 
-    viewerContent.addEventListener(
+      viewerContent.addEventListener(
       "touchend",
       () => {
         if (state !== "viewer") return;
@@ -486,13 +486,11 @@ document.addEventListener("DOMContentLoaded", () => {
         const TAP_MAX = 14;
         const SWIPE_MIN = 35;
 
-        // Tap: advance images only (do not steal taps from Vimeo)
         if (Math.abs(dx) <= TAP_MAX && Math.abs(dy) <= TAP_MAX) {
           if (activeType !== "video") nextItem();
           return;
         }
 
-        // Horizontal swipe only
         if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
 
         if (dx < 0) nextItem();
@@ -501,10 +499,25 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: true }
     );
 
-  // Click outside media closes viewer (works for Vimeo + images)
-viewerContent.addEventListener("click", (e) => {
-  if (state !== "viewer") return;
-  if (viewerIntroActive) return;
+    // Click outside media closes viewer (works for Vimeo + images)
+    viewerContent.addEventListener("click", (e) => {
+      if (state !== "viewer") return;
+      if (viewerIntroActive) return;
+
+      const tag = e.target?.tagName?.toLowerCase?.() || "";
+      const clickedIframe = tag === "iframe" || !!e.target.closest?.("iframe");
+      const clickedImage = viewerImg && (e.target === viewerImg);
+
+      if (clickedIframe || clickedImage) return;
+
+      closeViewer();
+    });
+  } // <-- THIS closes: if (viewerContent) { ... }
+
+  /* ---------------- Parallax (desktop only) ---------------- */
+  const hasFinePointer =
+    window.matchMedia &&
+    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
 
   // If click is on the media itself, do nothing
   const tag = e.target?.tagName?.toLowerCase?.() || "";
