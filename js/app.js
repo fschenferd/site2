@@ -581,4 +581,3 @@ document.addEventListener("DOMContentLoaded", () => {
       openPortugueseAbout();
     });
   }
-});
