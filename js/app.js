@@ -301,7 +301,7 @@ document.addEventListener("DOMContentLoaded", () => {
     body.classList.add("locked");
     if (viewer) viewer.hidden = false;
 
-    // Always start clean (prevents “last image sticks”)
+    // Always start clean (prevents "last image sticks")
     hardResetViewerMedia();
     removeViewerIntro(); // ensure no stale intro remains
 
@@ -474,9 +474,9 @@ document.addEventListener("DOMContentLoaded", () => {
       { passive: false }
     );
 
-      viewerContent.addEventListener(
+    viewerContent.addEventListener(
       "touchend",
-      () => {
+      (e) => {
         if (state !== "viewer") return;
         if (viewerIntroActive) return;
 
@@ -486,11 +486,13 @@ document.addEventListener("DOMContentLoaded", () => {
         const TAP_MAX = 14;
         const SWIPE_MIN = 35;
 
+        // Tap detection (next item)
         if (Math.abs(dx) <= TAP_MAX && Math.abs(dy) <= TAP_MAX) {
           if (activeType !== "video") nextItem();
           return;
         }
 
+        // Swipe detection
         if (Math.abs(dx) < SWIPE_MIN || Math.abs(dx) < Math.abs(dy)) return;
 
         if (dx < 0) nextItem();
@@ -512,24 +514,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
       closeViewer();
     });
-  } // <-- THIS closes: if (viewerContent) { ... }
-
-  /* ---------------- Parallax (desktop only) ---------------- */
-  const hasFinePointer =
-    window.matchMedia &&
-    window.matchMedia("(hover: hover) and (pointer: fine)").matches;
-
-  // If click is on the media itself, do nothing
-  const tag = e.target?.tagName?.toLowerCase?.() || "";
-  const clickedIframe = tag === "iframe" || !!e.target.closest?.("iframe");
-  const clickedImage = viewerImg && (e.target === viewerImg);
-
-  if (clickedIframe || clickedImage) return;
-
-  // Otherwise treat as "outside" click and close
-  closeViewer();
-});
-
+  }
 
   /* ---------------- Parallax (desktop only) ---------------- */
 
@@ -581,3 +566,4 @@ document.addEventListener("DOMContentLoaded", () => {
       openPortugueseAbout();
     });
   }
+});
